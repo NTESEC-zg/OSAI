@@ -1,0 +1,25 @@
+<Node/>
+	<Component>
+		<Type></Type>		
+		<ID>0x0001</ID>
+		<AppID></AppID>
+		<VendorID></VendorID>
+		<hierarchical>True</hierarchical>
+		<Language>C</Language>
+		<Ports>
+			
+		</Ports>
+		<Subcomponent>
+			
+		</Subcomponent>
+	</Component>
+	<Component>
+		
+	</Component>
+	<Component>
+		
+	</Component>
+	<Component>
+		
+	</Component>
+</Node>
