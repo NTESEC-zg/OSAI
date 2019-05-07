@@ -156,13 +156,21 @@ An AC Type aggregated within a Composite AC Type is called *AC Type Reference*, 
 
 > Composition AC Type reference
 
-An Atomic AC Type encapsulates the specific functionalities and internal behaviors.
+An Atomic AC Type encapsulates the functionalities and internal behaviors and interacts with the outside world through exposed interfaces.
 
-> Atomic AC Type
+> Atomic AC Type内容 
 
+In our opinion, the artifacts implemented inside an individual Atomic AC essentially contain four parts as follow:
 
+> + Function：request-response interface 同步
+> + Event：Event-driven
+> + Data Area: Data flow 支持异步传输 和 数据区域映射
+> + Service：
 
-
++ Function
++ Event
++ Data Area
++ Service
 
 
 
