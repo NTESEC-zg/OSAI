@@ -148,7 +148,7 @@ A Composite AC Type aggregates existing AC Types (atomic ones and composite ones
 
 > Composite进行组合
 
-The composition in OSAI component model groups existing components and gives a hierarchical views when designing logical software architecture, and then, to  reduce the complexity, a Composite AC Type is instantiated and treated as a single component  in the components interaction, which was considered as a trend in [].
+In fact, the composition in OSAI component model groups existing components and gives a hierarchical views when designing logical software architecture, and then, to  reduce the complexity, a Composite AC Type is instantiated and treated as a single component  in the components interaction, which was considered as a trend in [].
 
 > Composition specification
 
@@ -160,31 +160,62 @@ An Atomic AC Type encapsulates the functionalities and internal behaviors and in
 
 > Atomic AC Type内容 
 
-In our opinion, the artifacts implemented inside an individual Atomic AC essentially contain four parts as follow:
+In our opinion, the artifacts implemented inside an individual Atomic AC essentially include four parts as follow:
 
 > + Function：request-response interface 同步
 > + Event：Event-driven
 > + Data Area: Data flow 支持异步传输 和 数据区域映射
-> + Service：
+> + Service：Runnable
 
-+ Function
-+ Event
-+ Data Area
-+ Service
++ Operation：Under the semantic of a synchronous client/server communication pattern, a component may be equipped with operations that can be requested by other components. An AC can request operation that another AC provides or response the results of its operation execution by utilizing the *request-reply* interface.
+
++ Event：Event-driven interaction is also desired for the loosely coupled software components. In OSAI Component Model, an AC has the capacity to trigger or react to some specific types of event. 
+
+  > Through the *event-trigger* interface, events can be raised and transferred to multiple ACs or 
+
++ Data Area：An AC may contain data areas with different types of data. Data can transferred between different ACs' data area in a asynchronous sender/receiver communication pattern. In addition, data area can also be mapped with other data areas or IO area of the device for data synchronization.
+
++ Service：In the run-time environment of OSAI, an AC has no direct access to underlying operating system. In order to use mechanism like threading, code fragment of an AC's internal behavior that need to be executed cyclically are wrapped into an artifact called *Service*. Services can be scheduled by run-time infrastructure and mapped with operating system tasks.
+
+The OSAI Component Model also defines 4 types of port to identify the entry points of the ACs for data, event and operation request/reply transfer. As shown in figure x, ports are distinguished between provided ports and required ports.
+
+> port 图例
 
 
 
-Service
 
-interface 
 
-Capacity description
+Figure x gives an example of constructing a Composite AC Type named *COETransport* composing two Atomic AC Type References: *CANopenProtocolSupport* and *EtherCATMaster*. 
+
+> 图例给出了一个组合两个AC Type Ref的例子
+
+*COETransport* provides support for communicating with servo drives that control the axises on a robot arm through EtherCAT (quote); *EtherCATMaster* plays the role of a master protocol stack of EtherCAT that interacts with the EtherCAT slaves (servo drives); *CANopenProtocolSupport* provides functionalities to support CANopen (a high-layer communication protocol for embedded systems used in automation)  over EtherCAT (CoE). 
+
+> CANopenProtocol组件结构
+
+Since the Composition AC Type only exposes the ports on its surface, the *AC Type Reference* will interact with outside world through the port *delegation* and communicate with another *AC Type Reference* , inside the same Composition AC Type, through port *binding*. Such two concepts are both implemented at type-level.
+
+> delegation & binding
+
+In the scene of robot motion control, instructions for moving axis or configuring the operation mode will be handled by the *COETransport AC Type* by invoking the request-reply ports which are delegated to ports of *CANopenProtocolSupport AC Type Reference*. 
+
+These instructions will be transformed and wrapped into SDO (Service Data Object) packages that accord with the object dictionary of CiA 402 (CANopen device profile for motion controllers and drives released by *CAN in Automation* 注释：**CAN in Automation** (CiA) is the international users' and manufacturers' organization that develops and supports CAN-based higher-layer protocols.). 
+
+Then these SDOs, which are written to the *EtherCATMaster AC Type Reference* through the port binding, are transferred to the EtherCAT slaves via EtherCAT along with the process data organized in PDOs (Process Data Objects).
+
+> 描述图例组件
+
+Notice that every AC Type, besides the ports exposed from inner artifacts or port delegation, will implement an extra port for receiving events that manage the lifecycle after instantiated at run-time.
+
+> lifecycle port
+
+
 
 ![AC_Type](.\img\AC_Type.png)
 
 
 
-#### Life-cycle
+#### Lifecycle
 
 In [] [] [], the authors proposed an idealized life cycle of software components consisting of three phases: *design*, *deployment* and *run-time*. 
 
@@ -198,51 +229,41 @@ Figure x  describes the three phases and several stages when constructing a dist
 
 >
 
-In the first place, OEM, the integrators, define the hardware architecture and model a software architecture. 
+In the first place, OEM, the integrator, defines the hardware architecture and model the software architecture of the system. 
 
 >
 
-By mapping the software architecture with the hardwares, OEM can determine how many and what kind of components they need and what run-time supports these component require. 
+By mapping the software architecture with the hardwares, OEM can determine how many and what kind of components (ACs) they need and what run-time supports these components require. 
 
 >
 
-An XML-based file called Component Repository Description (CRD) can be generated and it 
+Consequently, two kinds of XML-based files will be generated from the architecture: Component Type Definition (CTD) and Instance Wiring Description (IWD).
 
->
+CTD describes properties of the AC Type and specification of ports on its surface, remaining the internal contents and behaviors unimplemented; IWD gives a overall perspective about how AC Instances are assembled with the connection among ports.
+
+![](.\img\workfolw.png)
 
  In a collaborative development context, the design phase is often conducted by multiple developers (or vendors). 
 
->
+CTD files are assigned to vendors for the development of each AC's internal artifacts.
 
-Developers design and construct their own components independently based on a standardized interface definition and then store components in respective  repositories. 
+Developers design and implement AC Types independently based on the standardized interface definition (based on XML descriptor) and then store components in respective repositories. 
 
->
+ACs can be retrieved from the repository and composed into Composite AC Types, which can also be deposited back for further retrieve and reuse, that conform with the specification in CTD.
 
-Components can be retrieved from the repository and composed into composite components that can be deposited back for further retrieve and reuse.
+During the deployment phase, ACs are compiled into object code for target platform and delivered to the integrator (or OEM). The CTD files are also merged back including complete xml-based description of internal behaviors and AC Type References  of each AC Type.
 
->
+To build the control system, the integrator retrieves components from the object repository and deploy them into the run-time environment (RTE) along with the IWD file which specifies the ports connection and initialization parameters for instantiation.
 
-During the deployment phase, components are compiled into object code for target platform and delivered to the integrator (or OEM). 
-
->
-
-To build the control system, the integrator retrieve components from the object repository and deploy them into the run-time environment (RTE) along with an XML-based instance wiring configuration (IWC) which specifies the dependency and interface connection among component instances.
-
->
-
-A component may have one or multiple instance. 
-
->
+An AC may have one or multiple instance. 
 
 These instances communicate with each other at run-time via *Unified Dynamic Bus*, which will be detailed later.
 
 > state machine
 
-
+RTE of OSAI Component Model has the ability to, by means of UDB and *Component Adaption Manager*, have  AC Instances loaded, unloaded or updated.
 
 [back](#Component Model of Open Software Architecture for Industry (OSAI))
-
-#### Port & Interface
 
 
 
@@ -250,31 +271,64 @@ These instances communicate with each other at run-time via *Unified Dynamic Bus
 
 > OSAI为工业应用场景中的不同设备、多平台、分布式的特点提出一种统一的架构，以供AC能够部署和执行，并且AC实例之间通过一个统一的总线进行交互。
 
-> OSAI的运行时架构针对ICS中多种设备，不同性能配置，包括那些配置较高的能部署OS包括实时OS的设备和那些小的基于MCU的设备。
+OSAI proposes a unified architecture for diverse devices, multiple platforms, and distributed features in the industrial application scenarios, to guarantee the deployment and execution of AC instances, and interactions between AC instances are implemented by a united bus.
 
+> OSAI的运行时架构针对ICS中多种设备，不同性能配置（具备Heterogeneous 特性），包括那些配置较高的能部署OS包括实时OS的设备和那些小的基于MCU的设备。
 
+The run-time architecture of OSAI aims at a variety of devices with different performance configurations ( the heterogeneous characteristic) in ICS, including both high-profile devices can deploy OS(real-time OS included) and small-scale devices based on MCU.
 
 > 部署在这不同的两类设备的上AC也依此被分为PAC和LAC，在OSAI的分布式架构中，每一台嵌入式设备被称为一个node
 
+ACs deployed on these two types of devices are divided into PAC and LAC accordingly. In the distributed architecture of OSAI, each embedded device is called a *Node*.
 
+> LAC被部署在小型MCU设备上，通常在此类Node中只会一个LAC，与其一同部署的还有一个为这个LAC特定低层级的运行时环境（如IEC 61131-3程序运行时）
 
-> LAC被部署在小型MCU设备上，通常在此类node中只会一个LAC，与其一同部署的还有一个为这个LAC特定低层级的运行时环境（如IEC 61131-3程序运行时）
+LACs are deployed on small MCU devices, typically there is a single LAC in such a Node, along with a specific run-time environment for this LAC at the low level, such as the IEC 61131-3 runtime.
 
 > 至于能力capability较强的设备，OSAI给出了一个分层架构包括 Containerized Instance Layer 和 Runtime infrastructure layer
 
-+ Containerized Instance Layer
+As for devices with powerful capability, OSAI defines a hierarchical architecture including Dynamic Instance Layer and Runtime Infrastructure Layer.
 
-> 这一层是所有AC部署并运行的地方，如同spring的IoC容器，组件被载入到这一层，由AC Type被实例化为AC Instance，随后实例间彼此建立连接。
->
+> Dynamic Instance Layer
+> 这一层是所有AC部署并运行的地方，如同spring的IoC容器，组件被载入到这一层，基于IWD文件，由AC Type被实例化为AC Instance，随后实例间彼此建立连接。
+
+- Dynamic Instance Layer
+
+This layer is where all of ACs are deployed and executed, like IoC container in Spring, ACs are loaded into this layer. Based on the IWD file, an AC Instance is instantiated by an AC Type, which then connections between each other are established.
+
 > 所有的PAC实例都被docker-like的容器包裹着以隔离组件，实例容器间通过OSAI Connection进行连接通信
 
-> docker的作用
+ A PAC instance is wrapped by a docker-like container to perform the isolation between components, and communications among containers are implemented via OSAI Connection.
 
-> 这一层中的所有组件都由组件适配管理器管理
+> 这一层中的所有组件都由Run-time Infrastructure Layer中组件适配管理器CAM管理，an particular component 读取IWD文件，实例化组件，为端口建立连接，接口事件的绑定，并触发控制组件生命周期的事件
+
+Components in this layer are under the management of CAM (Component Adapter Manager) in Run-time Infrastructure Layer, a particular component responsible for reading IWD files, instantiating components, linking connections of ports, bounding interface events, and triggering events that control component run-cycle.
 
 + Run-time Infrastructure Layer
 
-> 
+Run-time Infrastructure Layer runs above OS and contains modules for run-time support.
+
+> RIL运行在OS之上 包括了对运行时的支持
+
+It is a basic layer that provides a configurable RTE for the deployment and execution of PAC including some device-specific IO drivers. 
+
+> 这是一个可扩展的层 为PAC的部署和执行提供了一个可配置的RTE，包括一些设备相关的IO驱动
+
+Modules in the Run-time Infrastructure Layer are scalable for different Nodes, and these modules interact with the PACs in the Dynamic Instance Layer via the UDB. Specifically, the data passing or function calls between an PAC and module in the Run-time Infrastructure Layer are through the similar ports connection as the communication between PACs. 
+
+
+
+ while some requisite modules offer essential facilities for PACs on each Node. 
+
+
+
+Operating System Abstraction Server (OSAS)  
+
+
+
+
+
+
 
  
 
@@ -282,57 +336,68 @@ These instances communicate with each other at run-time via *Unified Dynamic Bus
 
 #### Unified Dynamic Bus
 
+
+
 #### Dynamics
 
 ![statemachine](.\img\statemachine.png)
 
-为了更好地进行组件运行时生命周期的管理以及实现组件模型动态性（即在运行时加载卸载及更新组件），每个组件都包含一个状态机，来描述组件实例在运行时的生命周期及状态更替。
+In order to better perform the component lifecycle management in runtime and support dynamic properties of the component model  (i.e., loading, unloading and updating components on the fly), each component provides a state machine to describe state transitions of component instances during service life.
 
-状态机将一个组件实例所可能的状态定义为INIT，LOADED, READY, ACTIVE, DEACTIVE, DELETED 以及为实现动态重配置所需要的BLOCKED, UPDATED状态，如图X所表示，所期望的组件实例运行时的行为如下：
+The state machine defines the possible states that an instance of a component can experience states as INIT, LOADED, READY, ACTIVE, DEACTIVE, DELETED, and BLOCKED, UPDATED needed for dynamic updates, as shown in figure X. The dynamic behavior of a component instance at runtime is as follows:
 
-① 事实上，INIT状态是个虚拟状态，组件一旦实例化，就离开这个状态，同时组件实例通过CM注册加载。
+Each component has a lifecycle interface of event-triggered type,  which enables migrations between component states by calling operations on that interface, such as loaded2ready(), active2deactive(), and so on. (1) - (6) state transitions are the processes of a component from start to end in general, and (7) - (9) are additional parts that components go through when they need to be updated dynamically at runtime.
 
-> CM对于每个组件实例都有一个引用计数的概念来管理组件实例的生命周期。接口被查询计数＋1，释放-1，计数变成0之前不能停用组件，即直到处理完本次调用为止。
+1) In the INIT state, the instantiation takes place, parameters are initialized, and the lifecycle interface is created. At the same time the component registers and loads with the help of CAM, providing interface information, and resources are allocated by the system.
 
-② 通过对CM的查询，组件实例获取所需interface，建立与其他组件的连接*根据port来创建DDS实体*，等待运行。
+2) By calling *loaded2ready()*, the corresponding DDS entities with QoS policies are created according to the component  interfaces. Establishing connections with other components, the component waits to run.
 
-③ 组件service绑定到task, 组件实例开始执行，在ACTIVE状态，组件可以与其他组件互相通信。
+3) The role of *ready2active()* is to make the component instance start working by binding services to runtime tasks. In the ACTIVE state, the component can communicate with other components.
 
- 在组件实例运行过程中，可能出现的状态改变有两种：完成任务结束运行，或是因为更新换代或是组件实例受到破坏等原因需要进行动态更新（即，用新的组件实例来替换旧的），具体的动态更新实现将在后面说明。
+4) When the component execution is completed without updating requirement, the *active2deactive()* operation executes, CAM refuses new invocations for the component and does not deactivate the component until the current invocation is processed.
 
-④ 在无需更换组件的情况下，组件实例正常执行，等到不需要它了，停止接收新的调用和通信，变成DEACTIVE状态。
+5) After the component completes the execution of the current invocation, the DDS entities are deleted, components are disconnected, services and tasks are unbound, and resources are released.
 
-⑤ DEACTIVE状态的组件实例完成当前调用执行之后，解绑task，释放资源。
+6) Calling the operation *loaded2deleted() *, the component unloads with logout of interfaces.
 
-⑥ 回到LOADED状态的组件实例可以等待再次被使用，也可以通过CM注销interface, 卸载组件。
+7) Especially, if the component needs to be updated, CAM blocks new invocations and communications for this component, while the old component continuing to process the current invocation.
 
-⑦ 当检测到处在运行中的组件实例更新的需要时，我们将新的调用和通信阻塞住，此时的旧组件继续运行将当前调用执行完成并返回，也就是处于BLOCKED状态。
+8) Once the component that needs to be replaced completes the current execution, with the operation *blocked2updated() *, CAM unties services with tasks, unlink connections, replaces the new component instance, redirects the reference, resets connections, and dynamic updating completes.
 
-⑧ 等到需要被更换的组件完成当前周期执行，与task解绑，unlink连接，这时候换上新的组件，将引用重定向，连接重新建立，更新完成。
+9) Now wake up invocations that previously blocked, the new component return to the ACTIVE state continues to run after binding services to tasks.
 
-⑨ 此时将先前阻塞的调用唤醒，新的组件实例service绑定到task之后就可以继续运行了。
 
-作为适用于工业控制系统的组件模型，我们对于组件在运行时的添加删除以及更改有足够的支持，以此来对系统修正缺陷，添加功能，运行时优化，同时避免停机更新所造成的巨大花费。
 
-事实上，对于动态更新的实现，我们利用了DCPS模型作为消息中间件，其对qos策略的支持及发现机制使得组件的重连变得容易。在DCPS模型中，每个实体都具有一套Qos策略来描述数据传输。对相应的Qos策略进行配置，能够对通信周期、可靠性、资源分配等进行恰当的约束。与动态更新相关qos策略描述如下：
+As a component model applies to ICS, in order to better deal with system failures or upgrade requirements when the system is on running, we provide enough support to component dynamic updating, which is a great help in bug fixing, adding functionalities, runtime optimization, and avoiding the huge cost of downtime. 
 
-| Qos策略        | 描述                                                         |
-| :------------- | ------------------------------------------------------------ |
-| deadline       | 对于DataReader，指定到达数据样本预期的最大传输时间 <br />对于DataWriter，指定在它们之间发布样本的时间不大于传输时间的承诺<br />表示预期更新实例的最大持续时间(截止日期) |
-| discovery      | 指定发现域中参与者所需的属性                                 |
-| durability     | 指定是否将之前发布的数据储存和传送至新DataReader             |
-| history        | 指定必须为DataWriter或DataReader储存多少数据                 |
-| liveness       | 指定和配置允许DataReader探测DataWriter何时变为断开或“死亡”的机制 |
-| reliability    | 指定是否可靠地传送数据                                       |
-| resourcelimits | 如果允许动态分配，控制为实体分配的物理内存的数量以及它们如何发生，也控制Resourcelimits 关键字主题不同实例值间的内存使用 |
+In fact, we benefit a lot from choosing the DCPS model as message middleware to implement the dynamic update. Flexible configuration of QoS policies and the discovery mechanism make it easy to reconnect components, with minimal or no impact on other components and the system.
 
-借助这些特性，组件能够尽可能快地进行动态更新，同时对其他组件及系统尽量不造成或少造成影响。
+In the DCPS model, each entity has a set of QoS policies to describe data transmission. The corresponding QoS policies can be configured to properly constrain the communication cycle, reliability, resource allocation, etc. There are some QoS policies that provide effective support for dynamic update of components, such as:
+
+- durability- specifies whether or not the context will store and deliver previously published data to new entities.
+- liveness - specifies and configures the mechanism that allows the DataReader to detect when the DataWriter becomes disconnected or "dead.
+- resource limits - controls the amount of physical memory allocated for entities and how they occur if the dynamic allocation is allowed.
+
+To be specific, QoS policies can be used to block data when the component receiving messages needs to be updated dynamically. After the update operation starts, the old component exists, i.e., the original DataReader offline. DDS uses the durability QoS policy to preserve the unreceived data on permanent storage. The update finishes and the new DataReader broadcasts the subscription, DDS sends the staging data. It is similar if there is a component gets a need for  dynamic updating when it sends messages. After the old component is removed, DataReader detects the disconnection of the original DataWriter via the liveness QoS, so it begins to receive the data sent by the new component.
 
 [back](#Component Model of Open Software Architecture for Industry (OSAI))
 
 ## Evaluation & Implementation
 
-#### Comparision
+#### Comparison
+
+In order to reflect the characteristics and evaluate the properties of the OSAI component model more systematically, we selected some similar component models for comparison. We choose both domain-specific and general-purpose models to make this comparison more meaningful. Following the dimensions in basic requirements and advanced features, the information of these component models is collected in table Ⅰ. From the contract,  we can summarize these models roughly as follows (in alphabetic order) : 
+
+- AUTOSAR (AUTomotive Open System ARchitecture) is a standardized software architecture in the automotive field. The standard supports both client-server and sender-receiver communication modes. AUTOSAR provides hierarchical architecture at design-time and supports multiple instantiation at runtime.
+- CCM (CORBA Component Model) is a general-purpose component model based on the CORBA middleware. Thus components are not tied to any particular language or platform as long as the CORBA middleware is used. Component interfaces are described in the CORBA IDL and they provide synchronous or asynchronous communication.
+- IEC 61499 provides a component solution for automation and distributed control systems extended by IEC 61131. The execution of components called Function Blocks(FBs) in this standard is event-driven and data transmission is via pipe&filter way. The implementation platform and language with IEC 61499 are also not limited.
+- Rubus is a domain-specific component model focusing on real-time properties and resource-constraint problems of embedded systems. It runs on the base of the Rubus OS. Implementation is done by C and communication style is pipe&filter.
+- SOFA 2.0 is an extension of the SOFA(Software Appliances) component model with hierarchical architecture and features like dynamic reconfiguration, control parts, and multiple communication patterns. SOFA 2.0 has to be developed by Java language, so it is only compatible with platforms supporting JVM(Java Virtual Machine).
+- TwinCAT(The Windows Control and Automation Technology) is a PC-based automation software developed by Beckhoff. TwinCAT offers TcCOM (TwinCAT Component Object Model) derived from the COM (Component Object Model) to define characteristics and behaviors of application modules. Modules in TwinCAT support multiple instantiation and periodic tasks. However, the run-time environment of TwinCAT relies on specific hardware devices.
+
+From the table, we can observe that OSAI component model not only possesses characteristics like  hierarchical design and the independency of language and platform, but also provides advanced features including multiple communication styles based on DCPS model, multiple instantiation, and run-time dynamics. 
+
+Equipped with comparatively comprehensive features above, OSAI component model, to some extent, can be applied to embedded distributed systems in more domains, not merely for ICS.   
 
 #### Analysis
 
