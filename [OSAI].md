@@ -294,7 +294,7 @@ As for devices with powerful capability, OSAI defines a hierarchical architectur
 
 - Dynamic Instance Layer
 
-This layer is where all of ACs are deployed and executed, like IoC container in Spring, ACs are loaded into this layer. Based on the IWD file, an AC Instance is instantiated by an AC Type, which then connections between each other are established.
+This layer is where all of ACs are deployed and executed, like IoC (Inversion of Control) container in Spring(注释), ACs are loaded into this layer. Based on the IWD file, an AC Instance is instantiated from an AC Type, which then connections between each other are established.
 
 > 所有的PAC实例都被docker-like的容器包裹着以隔离组件，实例容器间通过OSAI Connection进行连接通信
 
@@ -314,29 +314,23 @@ It is a basic layer that provides a configurable RTE for the deployment and exec
 
 > 这是一个可扩展的层 为PAC的部署和执行提供了一个可配置的RTE，包括一些设备相关的IO驱动
 
-Modules in the Run-time Infrastructure Layer are scalable for different Nodes, and these modules interact with the PACs in the Dynamic Instance Layer via the UDB. Specifically, the data passing or function calls between an PAC and module in the Run-time Infrastructure Layer are through the similar ports connection as the communication between PACs. 
+Modules in the Run-time Infrastructure Layer are scalable for different Nodes, and these modules communicate with the PACs in the Dynamic Instance Layer via the UDB. Specifically, a PAC can access the functionalities of a module in the Run-time Infrastructure Layer through the ports connection just the way PACs interact with each other. Hence, a module that encapsulate specific run-time supports are regarded as an individual AC by PACs. Such decoupling brings flexibility to PACs while modules in the Run-time Infrastructure Layer, in practice, remain tightly coupled for a stable performance.
 
+> RIL紧耦合
 
+Some modules that provide essential facilities are requisite in this layer:1) Operating System Abstraction Server (OSAS)  abstracts from the underlying operating system and provides basic services and library functions, which makes PACs independent from operating system. 2) Component Adaption Manager (CAM) plays a key role that loads and initializes PACs. CAM helps build port connection among PACs or between PACs and the Run-time Infrastructure Layer according to the IWD file.  By sending different event triggers to the lifecycle event port of each PAC, CAM can thus control the loading, unloading and updating of them. 3) In terms of the embedded real-time operating system, periodic tasks should be scheduled based on priority in order to achieve real-time performance. To this end, *Services* inside an AC are mapped to the real-time tasks and managed by RT-Task Manager module. 
 
- while some requisite modules offer essential facilities for PACs on each Node. 
-
-
-
-Operating System Abstraction Server (OSAS)  
-
-
-
-
-
-
-
- 
+> osas cam task manager
 
 ![Architecture](.\img\Architecture.png)
 
 #### Unified Dynamic Bus
 
+> UDB 和 DDS
 
+Ports connection links AC Instances together while the communication is handled by the UDB based on DDS middleware.  
+
+> 
 
 #### Dynamics
 

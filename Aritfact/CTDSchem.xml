@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:element name="Repository">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="Vendor" ></xs:element>
+				<xs:element name="Blueprint">
+					
+				</xs:element>
+				<xs:element name="Application">
+					<xs:complexType>
+						<xs:element name="Description"></xs:element>
+						<xs:element name="Atomic_Component_Type" type="AtomicComponentType" maxOccurs="unbounded"/>
+
+						<xs:element name="Composite_Component_Type" type="" maxOccurs="unbounded"/>
+
+					</xs:complexType>
+					
+					<!-- 基类ComponentType定义 -->
+					<xs:complexType name="ComponentType" abstract="true">
+						<xs:sequence>
+							<xs:element name="Name" type="string"/>
+							<xs:element name="Type_ID" type="string"/>
+							<xs:element name="License"></xs:element>
+							<xs:element name="Life_Cycle"></xs:element>
+							<xs:element name="Parameters"></xs:element>
+							<xs:element name="Ports">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="R_Port" type="Port" maxOccurs="unbounded"/>
+										<xs:element name="P_Port" type="Port" maxOccurs="unbounded"/>
+										<xs:element name="RP_Port" type="Port" maxOccurs="unbounded"/>
+									</xs:sequence>									
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>						
+					</xs:complexType>
+
+					<!-- 子类AtomicComponentType定义 -->
+					<xs:complexType name="AtomicComponentType">
+						<xs:extension base="ComponentType">
+							<xs:sequence>
+								<xs:element name="DataAreas"></xs:element>
+								<xs:element name="Services"></xs:element>
+							</xs:sequence>
+						</xs:extension>
+					</xs:complexType>
+
+					<!-- 子类CompositeComponentType定义 -->
+					<xs:complexType name="CompositeComponentType">
+						<xs:extension base="ComponentType">
+							<xs:element name="Component_Type_References">
+								<xs:element name="Component_Type_Reference" type="ComponentTypeReference" maxOccurs="unbounded"/>
+							</xs:element>
+						</xs:extension>
+					</xs:complexType>
+
+					<!-- ComponentTypeReference定义 -->
+					<xs:complexType name="ComponentTypeReference">
+						<xs:sequence>
+							<xs:element name="Name" type="string"/>
+							<xs:element name="Delegation" maxOccurs="unbounded" type="xs:string">
+								<xs:attribute name="Port_Ref" type="xs:string"/>
+							</xs:element>
+							<xs:element name="Binding" maxOccurs="unbounded">
+								<xs:attribute name="Port_Ref" type="xs:string"/>
+								<xs:attribute name="Bind_Type_Ref" type="xs:string"/>
+							</xs:element>	
+						</xs:sequence>
+					</xs:complexType>
+
+					<!-- Port定义 -->
+					<xs:complexType>
+						<xs:attribute name="Port_Type" type="xs:string"/>
+						<xs:sequence>
+							<xs:element name="Port_Name" type="string"/>
+							<xs:element name="Property"></xs:element>
+							<xs:choice>
+								<xs:element name="Interface_Ref" type="string"/>
+								<xs:element name="Event_Ref" type="string"/>
+								<xs:element name="DataArea_Ref" type="string">
+									<xs:attribute name="Bind_Type_Ref" type="xs:string"/>
+								</xs:element>
+							</xs:choice>							
+						</xs:sequence>
+					</xs:complexType>
+
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>
